@@ -32,6 +32,7 @@ import org.codehaus.groovy.ast.AnnotatedNode;
 import org.codehaus.groovy.ast.AnnotationNode;
 import org.codehaus.groovy.ast.ClassNode;
 import org.codehaus.groovy.ast.expr.ConstantExpression;
+import org.codehaus.groovy.ast.expr.PropertyExpression;
 import org.codehaus.groovy.ast.expr.Expression;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.CompilePhase;
@@ -118,14 +119,35 @@ public class ArtefactTypeAstTransformation extends AbstractArtefactTypeAstTransf
 
     protected String resolveArtefactType(SourceUnit sourceUnit, AnnotationNode annotationNode, ClassNode classNode) {
         Expression value = annotationNode.getMember("value");
-
-        if (value != null && (value instanceof ConstantExpression)) {
-            ConstantExpression ce = (ConstantExpression) value;
+        ConstantExpression ce = getConstantExpression(value);
+        if (ce != null) {
             return ce.getText();
         }
         else {
             throw new RuntimeException("Class ["+classNode.getName()+"] contains an invalid @Artefact annotation. No artefact found for value specified.");
         }
+    }
+
+    private ConstantExpression getConstantExpression(Expression expr) {
+        ConstantExpression ce = null;
+        if (expr == null) {
+            return ce;
+        }
+        if (expr instanceof ConstantExpression) {
+            ce = (ConstantExpression)expr;
+        } else if (expr instanceof PropertyExpression) {
+            ce = getPropertyConstantExpression((PropertyExpression) expr);
+        }
+        return ce;
+    }
+
+    private ConstantExpression getPropertyConstantExpression(PropertyExpression expr) {
+        ConstantExpression ce = null;
+        Expression prop = expr.getProperty();
+        if (prop instanceof ConstantExpression) {
+            ce = (ConstantExpression)prop;
+        }
+        return ce;
     }
 
     protected boolean isArtefactAnnotationNode(AnnotationNode annotationNode) {
